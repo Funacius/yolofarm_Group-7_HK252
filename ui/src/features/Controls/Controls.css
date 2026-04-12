@@ -1,0 +1,57 @@
+.controls-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  min-height: 180px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.controls-card-title {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #111827;
+}
+
+.controls-toggle-group {
+  gap: 10px;
+}
+
+.controls-toggle-btn {
+  text-transform: none !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  padding: 10px 18px !important;
+}
+
+.controls-description {
+  font-size: 16px !important;
+  color: #6b7280;
+}
+
+.controls-slider-wrap {
+  padding: 0 6px;
+}
+
+.controls-threshold-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.controls-threshold-text {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #374151;
+}
+
+.controls-save-btn {
+  text-transform: none !important;
+  border-radius: 12px !important;
+  background-color: #2563eb !important;
+  font-weight: 700 !important;
+}

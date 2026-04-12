@@ -1,0 +1,21 @@
+.about-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+  height: 100%;
+}
+
+.about-card-title {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: #111827;
+  margin-bottom: 12px !important;
+}
+
+.about-card-text {
+  font-size: 16px !important;
+  color: #4b5563;
+  line-height: 1.8 !important;
+  white-space: pre-line;
+}

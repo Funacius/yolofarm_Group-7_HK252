@@ -1,0 +1,9 @@
+.history-filter-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.history-filter {
+  min-width: 180px;
+}

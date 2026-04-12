@@ -1,0 +1,23 @@
+.dashboard-grid {
+  width: 100%;
+  margin: 0 !important;
+}
+
+.dashboard-pump-column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: 100%;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-pump-column {
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-pump-column {
+    flex-direction: column;
+  }
+}

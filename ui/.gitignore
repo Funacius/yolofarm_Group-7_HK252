@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+
+# build output
+dist/
+build/
+coverage/
+**/dist/
+**/build/
+**/coverage/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+
+# misc
+*.local
