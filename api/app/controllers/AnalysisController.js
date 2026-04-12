@@ -1,64 +1,59 @@
-const axios = require("axios");
-const adafruit = require("../config/adafruit.config");
-const { Log } = require("../models/models")
+const { Log } = require("../models/models");
 
-const storeData = (req,res) => {
-    axios
-    .get(adafruit.url)
-    .then((response) => {
-      data = response.data
-      light = []
-      soil_moisture = []
-      air_humidity = []
-      temperature = []
-      data.forEach((item) => {
-        if (item.name == 'data_anhsang') {
-            light.push(item.last_value)
-            light.push(item.last_value_at)
-        }
-        if (item.name == 'data_nhietdo') {
-            temperature.push(item.last_value)
-            temperature.push(item.last_value_at)
-        }
-        if (item.name == 'data_doamkk') {
-            air_humidity.push(item.last_value)
-            air_humidity.push(item.last_value_at)
-        }
-        if (item.name == 'data_doamdat') {
-            soil_moisture.push(item.last_value)
-            soil_moisture.push(item.last_value_at)
-        }
-      })
-      /*temperature: Number,
-  air_humidity: Number,
-  soil_moisture: Number,
-  light: Number, */
-      Log.create({
-        date: light[1],
-        light: light[0],
-        temperature: temperature[0],
-        air_humidity: air_humidity[0],
-        soil_moisture: soil_moisture[0]
-      })
-    })
-    .catch((error) => {
-      console.error("Error fetching data:", error);
-    });
-}
+const home = async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 500, 2000);
+    const area_id = req.query.area_id;
+    const q = area_id ? { area_id: Number(area_id) } : {};
+    const data = await Log.find(q).sort({ date: -1 }).limit(limit).lean();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: String(error.message) });
+  }
+};
 
-const home = async (req,res) => {
-    try {
-        const data = await Log.find()
-        res.json(data)
+/** FR6 — CSV export for Excel */
+const exportCsv = async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 5000, 20000);
+    const area_id = req.query.area_id;
+    const q = area_id ? { area_id: Number(area_id) } : {};
+    const rows = await Log.find(q).sort({ date: 1 }).limit(limit).lean();
+    const headers = [
+      "date",
+      "area_id",
+      "temperature",
+      "air_humidity",
+      "soil_moisture",
+      "light",
+      "gdd",
+    ];
+    const lines = [headers.join(",")];
+    for (const r of rows) {
+      lines.push(
+        [
+          r.date ? new Date(r.date).toISOString() : "",
+          r.area_id ?? "",
+          r.temperature ?? "",
+          r.air_humidity ?? "",
+          r.soil_moisture ?? "",
+          r.light ?? "",
+          r.gdd ?? "",
+        ].join(",")
+      );
     }
-    catch (error) {
-        res.json({
-            error: error
-        })
-    }
-}
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="yolofarm-logs.csv"'
+    );
+    res.send(lines.join("\n"));
+  } catch (error) {
+    res.status(500).json({ error: String(error.message) });
+  }
+};
 
-setInterval(storeData, 25000)
 module.exports = {
-    home
-}
+  home,
+  exportCsv,
+};

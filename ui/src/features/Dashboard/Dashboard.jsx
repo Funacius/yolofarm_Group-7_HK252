@@ -1,122 +1,223 @@
-import { Box, Grid } from "@mui/material";
+import { Alert, Box, CircularProgress, Grid } from "@mui/material";
+import { useCallback, useEffect, useState } from "react";
 import PageHeader from "../../components/common/PageHeader";
 import SensorCard from "../../components/common/SensorCard";
 import StatusCard from "../../components/common/StatusCard";
 import GaugeCard from "../../components/common/GaugeCard";
 import HistoryChart from "../../components/common/HistoryChart";
 import PumpSwitch from "../../components/common/PumpSwitch";
+import environmentApi from "../../api/environmentApi";
+import irrigationApi from "../../api/irrigationApi";
+import manualControlApi from "../../api/manualControlApi";
+import { getDefaultAreaId } from "../../config/env";
 import "./Dashboard.css";
-import { useState } from "react";
+
+const POLL_MS = 12000;
+const CHART_POINTS = 14;
+
+function formatSensorValue(v) {
+  if (v == null || Number.isNaN(Number(v))) return "—";
+  return Number(v).toFixed(1);
+}
 
 export default function Dashboard() {
-  const [pump1, setPump1] = useState(false);
-  const [pump2, setPump2] = useState(false);
+  const areaId = getDefaultAreaId();
 
-  const lightHistory = [
-    { time: "8:00", lightIntensity: 20 },
-    { time: "9:00", lightIntensity: 28 },
-    { time: "10:00", lightIntensity: 35 },
-    { time: "11:00", lightIntensity: 40 },
-    { time: "12:00", lightIntensity: 48 },
-    { time: "13:00", lightIntensity: 55 },
-    { time: "14:00", lightIntensity: 62 },
-    { time: "15:00", lightIntensity: 68 },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [env, setEnv] = useState(null);
+  const [lightHistory, setLightHistory] = useState([]);
+  const [soilHistory, setSoilHistory] = useState([]);
+  const [soilThreshold, setSoilThreshold] = useState(40);
+  const [pumps, setPumps] = useState([]);
+  const [pumpOn, setPumpOn] = useState([false, false]);
+  const [toggleError, setToggleError] = useState(null);
 
-  const soilHistory = [
-    { time: "8:00", soilMoisture: 60 },
-    { time: "9:00", soilMoisture: 57 },
-    { time: "10:00", soilMoisture: 54 },
-    { time: "11:00", soilMoisture: 50 },
-    { time: "12:00", soilMoisture: 46 },
-    { time: "13:00", soilMoisture: 43 },
-    { time: "14:00", soilMoisture: 41 },
-    { time: "15:00", soilMoisture: 38 },
-  ];
+  const loadData = useCallback(async () => {
+    setError(null);
+    try {
+      const [current, hist, pumpList, cfg] = await Promise.all([
+        environmentApi.getCurrentEnvironment(areaId),
+        environmentApi.getEnvironmentHistory({
+          area_id: areaId,
+          limit: 120,
+        }),
+        irrigationApi.getPumps().catch(() => []),
+        irrigationApi.getThresholds(areaId).catch(() => ({})),
+      ]);
+
+      setEnv(current);
+      const slice = hist.slice(-CHART_POINTS);
+      setLightHistory(
+        slice.map((h) => ({ time: h.time, lightIntensity: h.lightIntensity }))
+      );
+      setSoilHistory(
+        slice.map((h) => ({ time: h.time, soilMoisture: h.soilMoisture }))
+      );
+
+      if (cfg?.soilMoistureOnBelow != null) {
+        setSoilThreshold(Number(cfg.soilMoistureOnBelow));
+      }
+
+      setPumps(pumpList);
+
+      const snap = await manualControlApi.getManualState(areaId).catch(() => null);
+      if (snap) {
+        setPumpOn([snap.pump1, snap.pump2]);
+      } else if (pumpList[0] || pumpList[1]) {
+        setPumpOn([
+          Boolean(pumpList[0]?.status),
+          Boolean(pumpList[1]?.status),
+        ]);
+      }
+    } catch (e) {
+      setError(e?.message || "Không tải được dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  }, [areaId]);
+
+  useEffect(() => {
+    loadData();
+    const id = setInterval(loadData, POLL_MS);
+    return () => clearInterval(id);
+  }, [loadData]);
+
+  const soil = env?.soilMoisture ?? 0;
+  const dry =
+    soil < soilThreshold
+      ? {
+          status: "Đất khô",
+          description: "Độ ẩm đất thấp hơn ngưỡng tưới.",
+        }
+      : {
+          status: "Đủ ẩm",
+          description: "Độ ẩm đất trong ngưỡng an toàn.",
+        };
+
+  const handlePumpToggle = async (index) => {
+    setToggleError(null);
+    const pump = pumps[index];
+    if (!pump?.id) {
+      setToggleError("Chưa có máy bơm trong CSDL — không gửi lệnh.");
+      return;
+    }
+    try {
+      await manualControlApi.togglePump(pump.id);
+      setPumpOn((prev) => {
+        const next = [...prev];
+        next[index] = !next[index];
+        return next;
+      });
+      const snap = await manualControlApi.getManualState(areaId);
+      setPumpOn([snap.pump1, snap.pump2]);
+    } catch (e) {
+      setToggleError(e?.message || "Không đổi được trạng thái bơm");
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" py={6}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box>
+    <Box sx={{ width: "100%", maxWidth: "100%" }}>
       <PageHeader
         title="Dashboard"
         subtitle="Theo dõi dữ liệu môi trường và trạng thái hệ thống theo thời gian thực."
       />
 
-      <Grid container spacing={3} className="dashboard-grid">
-        <Grid item xs={12} sm={6} md={4} lg={2.4}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      {toggleError && (
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setToggleError(null)}>
+          {toggleError}
+        </Alert>
+      )}
+
+      <Grid container spacing={3} className="dashboard-grid" sx={{ width: "100%" }}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
           <SensorCard
             title="Nhiệt độ"
-            value="29.4"
+            value={formatSensorValue(env?.temperature)}
             unit="°C"
             accentColor="#16a34a"
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4} lg={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
           <SensorCard
             title="Độ ẩm không khí"
-            value="72"
+            value={formatSensorValue(env?.humidityAir)}
             unit="%"
             accentColor="#2563eb"
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4} lg={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
           <StatusCard
             title="Tình trạng"
-            status="Đất khô"
-            description="Độ ẩm đất đang thấp hơn ngưỡng."
+            status={dry.status}
+            description={dry.description}
             accentColor="#f59e0b"
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={6} lg={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 6, lg: 2.4 }}>
           <SensorCard
             title="Ánh sáng"
-            value="68"
+            value={formatSensorValue(env?.lightIntensity)}
             unit="%"
             accentColor="#c026d3"
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={6} lg={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 6, lg: 2.4 }}>
           <GaugeCard
             title="Độ ẩm đất"
-            value={38}
+            value={Number(env?.soilMoisture ?? 0).toFixed(1)}
             unit="%"
             accentColor="#eab308"
           />
         </Grid>
 
-        <Grid item xs={12} md={6} lg={5}>
+        <Grid size={{ xs: 12, md: 6, lg: 5 }}>
           <HistoryChart
             title="Lịch sử ánh sáng"
-            data={lightHistory}
+            data={lightHistory.length ? lightHistory : [{ time: "—", lightIntensity: 0 }]}
             dataKey="lightIntensity"
           />
         </Grid>
 
-        <Grid item xs={12} md={6} lg={5}>
+        <Grid size={{ xs: 12, md: 6, lg: 5 }}>
           <HistoryChart
             title="Lịch sử độ ẩm đất"
-            data={soilHistory}
+            data={soilHistory.length ? soilHistory : [{ time: "—", soilMoisture: 0 }]}
             dataKey="soilMoisture"
           />
         </Grid>
 
-        <Grid item xs={12} lg={2}>
+        <Grid size={{ xs: 12, lg: 2 }}>
           <Box className="dashboard-pump-column">
             <PumpSwitch
               title="Máy bơm 1"
-              checked={pump1}
-              subtitle={pump1 ? "Đang bật" : "Đang tắt"}
-              onChange={() => setPump1((prev) => !prev)}
+              checked={pumpOn[0]}
+              subtitle={pumpOn[0] ? "Đang bật" : "Đang tắt"}
+              onChange={() => handlePumpToggle(0)}
             />
 
             <PumpSwitch
               title="Máy bơm 2"
-              checked={pump2}
-              subtitle={pump2 ? "Đang bật" : "Đang tắt"}
-              onChange={() => setPump2((prev) => !prev)}
+              checked={pumpOn[1]}
+              subtitle={pumpOn[1] ? "Đang bật" : "Đang tắt"}
+              onChange={() => handlePumpToggle(1)}
             />
           </Box>
         </Grid>

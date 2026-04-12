@@ -1,16 +1,11 @@
 const { Area, WaterPump, WateringTimer } = require("../models/models");
-const axios = require("axios");
+const { publishToOhStem } = require("../services/mqttPublish");
 class PumpRepository {
   constructor({ db }) {
     this.db = db;
   }
-  async all(req, res) {
-    try {
-      const pumps = await WaterPump.find({});
-      return res.status(200).json(pumps);
-    } catch (error) {
-      console.log(error);
-    }
+  async all() {
+    return WaterPump.find({});
   }
 
   async findPumpById(id) {
@@ -121,28 +116,7 @@ class PumpRepository {
   }
 
   async createRequest(ada_id, data) {
-    try {
-      await axios
-        .post(
-          `https://io.adafruit.com/api/v2/viet_hcmut/feeds/${ada_id}/data/`,
-          { value: data },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "X-AIO-Key": process.env.ADA_FEEDKEY,
-            },
-          }
-        )
-        .then((res) => {
-          // console.log(res);
-          return res;
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    } catch (error) {
-      console.log(error);
-    }
+    await publishToOhStem(ada_id, data);
   }
 }
 

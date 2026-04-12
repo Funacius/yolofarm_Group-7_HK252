@@ -27,13 +27,39 @@ http.interceptors.request.use(
 http.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message =
-      error?.response?.data?.message ||
-      error?.response?.data?.error ||
-      error?.message ||
-      "API request failed";
+    const res = error?.response;
+    if (res?.data) {
+      const d = res.data;
+      const nested =
+        d?.error && typeof d.error === "object" ? d.error.message : null;
+      const flat =
+        d?.message ||
+        (typeof d?.error === "string" ? d.error : null) ||
+        nested;
+      if (flat) {
+        return Promise.reject(new Error(flat));
+      }
+    }
 
-    return Promise.reject(new Error(message));
+    if (error?.code === "ECONNABORTED") {
+      return Promise.reject(
+        new Error(
+          `Hết thời gian chờ API (${API_BASE_URL}). Thử lại hoặc kiểm tra backend.`
+        )
+      );
+    }
+
+    if (!res) {
+      return Promise.reject(
+        new Error(
+          `Không kết nối được API (${API_BASE_URL}). Chạy backend: trong thư mục api gõ npm start (cổng 3001). Chi tiết: ${error?.message || "network error"}`
+        )
+      );
+    }
+
+    return Promise.reject(
+      new Error(error?.message || `Lỗi HTTP ${res.status}`)
+    );
   }
 );
 

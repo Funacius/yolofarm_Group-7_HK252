@@ -1,5 +1,5 @@
 const { Area, Light, LightTimer } = require("../models/models");
-const axios = require("axios");
+const { publishToOhStem } = require("../services/mqttPublish");
 class LightRepository {
   constructor({ db }) {
     this.db = db;
@@ -120,28 +120,7 @@ class LightRepository {
   }
 
   async createRequest(ada_id, data) {
-    try {
-      await axios
-        .post(
-          `https://io.adafruit.com/api/v2/viet_hcmut/feeds/${ada_id}/data/`,
-          { value: data },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "X-AIO-Key": process.env.ADA_FEEDKEY,
-            },
-          }
-        )
-        .then((res) => {
-          // console.log(res);
-          return res;
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    } catch (error) {
-      console.log(error);
-    }
+    await publishToOhStem(ada_id, data);
   }
 }
 

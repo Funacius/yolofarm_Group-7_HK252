@@ -7,6 +7,7 @@ const waterController = container.resolve("waterController");
 const areaController = container.resolve("areaController")
 
 router.get("/", areaController.getAll);
+router.get("/pumps", waterController.getAll);
 router.get("/pump/:id", waterController.getPumpById);
 router.get("/pumps/:id", waterController.getPumpByAreaId);
 router.put("/pumps", waterController.changeStatePump)

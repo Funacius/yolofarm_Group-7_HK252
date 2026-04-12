@@ -3,8 +3,8 @@ import HistoryChart from "../../../components/common/HistoryChart";
 
 export default function DashboardCharts({ lightHistory, soilHistory }) {
   return (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={6}>
+    <Grid container spacing={3} sx={{ width: "100%" }}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <HistoryChart
           title="Lịch sử ánh sáng"
           data={lightHistory}
@@ -12,7 +12,7 @@ export default function DashboardCharts({ lightHistory, soilHistory }) {
         />
       </Grid>
 
-      <Grid item xs={12} md={6}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <HistoryChart
           title="Lịch sử độ ẩm đất"
           data={soilHistory}

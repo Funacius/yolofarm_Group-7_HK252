@@ -1,4 +1,5 @@
 import http from "./http";
+import { getDefaultAreaId } from "../config/env";
 
 const normalizeEnvironmentData = (raw = {}) => {
   return {
@@ -44,24 +45,49 @@ const normalizeArea = (raw = {}) => {
   };
 };
 
+const formatChartTime = (item) => {
+  const d =
+    item.date ??
+    item.time ??
+    item.createdAt ??
+    item.timestamp ??
+    new Date().toISOString();
+  try {
+    const dt = d instanceof Date ? d : new Date(d);
+    return dt.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return String(d);
+  }
+};
+
 export const environmentApi = {
-  async getCurrentEnvironment() {
-    const response = await http.get("/environment/current");
+  async getCurrentEnvironment(areaId = getDefaultAreaId()) {
+    const response = await http.get(`/iot/snapshot/${areaId}`);
     return normalizeEnvironmentData(response.data);
   },
 
   async getEnvironmentHistory(params = {}) {
-    const response = await http.get("/environment/history", { params });
+    const area_id = params.area_id ?? getDefaultAreaId();
+    const limit = params.limit ?? 200;
+    const response = await http.get("/iot/history", {
+      params: { area_id, limit },
+    });
 
     const data = Array.isArray(response.data) ? response.data : [];
 
-    return data.map((item) => ({
-      time:
-        item.time ??
-        item.timestamp ??
-        item.date ??
-        item.createdAt ??
-        new Date().toISOString(),
+    const sorted = [...data].sort((a, b) => {
+      const da = new Date(a.date || 0).getTime();
+      const db = new Date(b.date || 0).getTime();
+      return da - db;
+    });
+
+    return sorted.map((item) => ({
+      time: formatChartTime(item),
       temperature:
         item.temperature ?? item.temp ?? item.data_nhietdo ?? item.nhietdo ?? 0,
       humidityAir:
@@ -87,14 +113,13 @@ export const environmentApi = {
   },
 
   async getAreas() {
-    const response = await http.get("/areas");
+    const response = await http.get("/water");
     const data = Array.isArray(response.data) ? response.data : [];
     return data.map(normalizeArea);
   },
 
   async getEnvironmentByArea(areaId) {
-    const response = await http.get(`/environment/area/${areaId}`);
-    return normalizeEnvironmentData(response.data);
+    return this.getCurrentEnvironment(areaId);
   },
 };
 

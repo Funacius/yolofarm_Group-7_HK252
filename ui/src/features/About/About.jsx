@@ -4,14 +4,14 @@ import "./About.css";
 
 export default function About() {
   return (
-    <Box>
+    <Box sx={{ width: "100%", maxWidth: "100%" }}>
       <PageHeader
         title="About"
         subtitle="Giới thiệu tổng quan về hệ thống YoloFarm."
       />
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+      <Grid container spacing={3} sx={{ width: "100%" }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Box className="about-card">
             <Typography className="about-card-title">
               YoloFarm là gì?
@@ -25,7 +25,7 @@ export default function About() {
           </Box>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Box className="about-card">
             <Typography className="about-card-title">
               Chức năng chính
@@ -40,7 +40,7 @@ export default function About() {
           </Box>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Box className="about-card">
             <Typography className="about-card-title">
               Thành phần hệ thống

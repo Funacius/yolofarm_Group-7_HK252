@@ -12,8 +12,8 @@ export default function DashboardOverview({
   soilDescription,
 }) {
   return (
-    <Grid container spacing={3}>
-      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+    <Grid container spacing={3} sx={{ width: "100%" }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
         <SensorCard
           title="Nhiệt độ"
           value={temperature}
@@ -22,7 +22,7 @@ export default function DashboardOverview({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
         <SensorCard
           title="Độ ẩm không khí"
           value={humidityAir}
@@ -31,7 +31,7 @@ export default function DashboardOverview({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={4} lg={2.4}>
+      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
         <StatusCard
           title="Tình trạng"
           status={soilStatus}
@@ -40,7 +40,7 @@ export default function DashboardOverview({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={6} lg={2.4}>
+      <Grid size={{ xs: 12, sm: 6, md: 6, lg: 2.4 }}>
         <SensorCard
           title="Ánh sáng"
           value={lightIntensity}
@@ -49,7 +49,7 @@ export default function DashboardOverview({
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={6} lg={2.4}>
+      <Grid size={{ xs: 12, sm: 6, md: 6, lg: 2.4 }}>
         <GaugeCard
           title="Độ ẩm đất"
           value={soilMoisture}

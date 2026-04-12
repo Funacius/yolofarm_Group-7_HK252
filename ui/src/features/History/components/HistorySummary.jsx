@@ -3,8 +3,8 @@ import SensorCard from "../../../components/common/SensorCard";
 
 export default function HistorySummary() {
   return (
-    <Grid container spacing={3} sx={{ mb: 3 }}>
-      <Grid item xs={12} sm={6} md={3}>
+    <Grid container spacing={3} sx={{ mb: 3, width: "100%" }}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <SensorCard
           title="Nhiệt độ TB"
           value="29.1"
@@ -13,7 +13,7 @@ export default function HistorySummary() {
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <SensorCard
           title="Độ ẩm KK TB"
           value="71"
@@ -22,7 +22,7 @@ export default function HistorySummary() {
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <SensorCard
           title="Độ ẩm đất TB"
           value="48"
@@ -31,7 +31,7 @@ export default function HistorySummary() {
         />
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <SensorCard
           title="Ánh sáng TB"
           value="45"

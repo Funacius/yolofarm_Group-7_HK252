@@ -78,9 +78,61 @@ const LogSchema = new mongoose.Schema({
   air_humidity: Number,
   soil_moisture: Number,
   light: Number,
+  gdd: Number,
   date: Date,
   time: String,
   area_id: Number,
+});
+
+/** Latest merged telemetry + actuator state per zone (updated by MQTT bridge). */
+const FarmSnapshotSchema = new mongoose.Schema(
+  {
+    area_id: { type: Number, required: true, unique: true },
+    temperature: Number,
+    air_humidity: Number,
+    soil_moisture: Number,
+    light: Number,
+    gdd: Number,
+    pump1: String,
+    pump2: String,
+    rc_servo: String,
+    buzzer: String,
+    led1: String,
+    led2: String,
+    lcd: String,
+    updatedAt: { type: Date, default: Date.now },
+    lastHistoryAt: Date,
+  },
+  { collection: "farmsnapshots" }
+);
+
+/** FR4 — watering time windows per pump (minutes from midnight). */
+const IrrigationScheduleSchema = new mongoose.Schema({
+  area_id: { type: Number, required: true },
+  pumpKey: { type: String, required: true },
+  windows: [
+    {
+      startMinute: { type: Number, required: true },
+      endMinute: { type: Number, required: true },
+    },
+  ],
+});
+
+/** FR3 — hysteresis / anti-chatter for auto irrigation (used by edge or future server logic). */
+const IrrigationConfigSchema = new mongoose.Schema({
+  area_id: { type: Number, required: true, unique: true },
+  soilMoistureOnBelow: { type: Number, default: 40 },
+  soilMoistureOffAbove: { type: Number, default: 65 },
+  minPumpSwitchIntervalSec: { type: Number, default: 120 },
+});
+
+const AiInferenceSchema = new mongoose.Schema({
+  area_id: Number,
+  kind: { type: String, enum: ["plant_health", "harvest"], required: true },
+  label: String,
+  confidence: Number,
+  imageUrl: String,
+  createdAt: { type: Date, default: Date.now },
 });
 
 const BuzzerSchema = new mongoose.Schema({
@@ -115,6 +167,16 @@ const WaterPump = mongoose.model("WaterPump", WaterPumpSchema);
 const Light = mongoose.model("Light", LightSchema);
 const LightTimer = mongoose.model("LightTimer", LightTimerSchema);
 const Log = mongoose.model("Log", LogSchema);
+const FarmSnapshot = mongoose.model("FarmSnapshot", FarmSnapshotSchema);
+const IrrigationSchedule = mongoose.model(
+  "IrrigationSchedule",
+  IrrigationScheduleSchema
+);
+const IrrigationConfig = mongoose.model(
+  "IrrigationConfig",
+  IrrigationConfigSchema
+);
+const AiInference = mongoose.model("AiInference", AiInferenceSchema);
 const Buzzer = mongoose.model("Buzzer", BuzzerSchema);
 const LCDScreen = mongoose.model("LCDScreen", LCDScreenSchema);
 
@@ -130,6 +192,10 @@ module.exports = {
   Light,
   LightTimer,
   Log,
+  FarmSnapshot,
+  IrrigationSchedule,
+  IrrigationConfig,
+  AiInference,
   Buzzer,
   LCDScreen,
 };

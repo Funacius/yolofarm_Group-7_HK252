@@ -22,7 +22,10 @@ export default function HistoryChart({
         borderRadius: "20px",
         p: 3,
         boxShadow: "0 2px 10px rgba(15, 23, 42, 0.06)",
-        minHeight: 340,
+        minHeight: 320,
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
       }}
     >
       <Typography
