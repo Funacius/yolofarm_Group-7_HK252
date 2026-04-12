@@ -4,6 +4,6 @@ const router = express.Router()
 
 var subcriberController = require('../controllers/subcriber')
 
-router.get("/", subcriberController.subcriberTopic)
+router.get("/:type", subcriberController.subcriberTopic)
 
 module.exports = router

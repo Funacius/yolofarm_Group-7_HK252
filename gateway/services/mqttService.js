@@ -1,12 +1,13 @@
 const mqtt = require("mqtt");
 
 var options = {
-  host: "c73bd1c56f45418d8508c933ca205712.s1.eu.hivemq.cloud",
+  host: "",
   port: 8883,
   protocol: "mqtts",
-  username: "ptho1504",
-  password: "Ptho1504",
+  username: "",
+  password: "",
 };
+
 class MQTTService {
   constructor(messageCallBack) {
     this.mqttClient = null;
@@ -24,7 +25,7 @@ class MQTTService {
       console.log(`Mqtt client connect`);
     });
   }
-  public(topic, message, options) {
+  publish(topic, message, options) {
     this.mqttClient.publish(topic, message);
   }
   subscribe(topic, options) {

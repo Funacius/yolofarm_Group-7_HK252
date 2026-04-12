@@ -5,6 +5,8 @@ const port = 3000;
 const publisherRouter = require("./routes/publisher");
 const subscriberRouter = require("./routes/subcriber");
 
+app.use(express.json());
+
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
