@@ -1,4 +1,4 @@
-<img width="1862" height="907" alt="image" src="https://github.com/user-attachments/assets/71f6d62a-e9fb-442a-bd8f-0d8f8b4be56d" /># Smart Farm
+
 
 ## 📌Introduction 
 the **Yolo Farm** project adopts the "Agriculture 4.0" philosophy—inspired by global leaders like Israel—to transition from labor-intensive practices to high-tech, data-driven automation. By integrating IoT (Internet of Things) and AI, the system creates a resilient framework for modern cultivation.
