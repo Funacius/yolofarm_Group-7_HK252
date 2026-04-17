@@ -50,9 +50,69 @@ https://github.com/user-attachments/assets/c39d4f0d-584f-488e-a0f5-2ecb3b0cc652
  - Ho Tran Minh Dat: CE
 
 ## How to run
-- step 1 : cd api (or ui) 
-- step 2 : npm install
-- step 3 : npm start
+
+**Prerequisites:** [Node.js](https://nodejs.org/) (LTS), [MongoDB](https://www.mongodb.com/) running locally (default `mongodb://127.0.0.1:27017`), and optionally [Python 3](https://www.python.org/) for the USB serial ↔ OhStem gateway in `iot/`.
+
+### 1. API (Express + MongoDB)
+
+```bash
+cd api
+npm install
+npm start
+```
+
+API listens at `http://localhost:3001` (e.g. routes under `/api/...`).
+
+### 2. Gateway — MQTT bridge (ingest + publish)
+
+Subscribes to OhStem MQTT and forwards messages to the API; exposes `POST /bridge/publish` for the API/UI stack.
+
+```bash
+cd gateway
+npm install
+npm run bridge
+```
+
+Optional connectivity check:
+
+```bash
+npm run check:ohstem
+```
+
+> **Note:** `gateway/main.js` (`npm start` in `gateway`) is a separate small Express app on port 3000; the stack described above uses **`bridgeServer.js`** via `npm run bridge`.
+
+### 3. UI (Vite + React)
+
+```bash
+cd ui
+npm install
+npm run dev
+```
+
+Open the URL printed in the terminal (Vite dev server). Production build: `npm run build`.
+
+### 4. IoT gateway (optional — serial ↔ OhStem)
+
+For a PC connected to the YoloBit/micro:bit over USB serial while using OhStem MQTT.
+
+```bash
+cd iot
+pip install -r requirements.txt
+```
+
+Copy `iot/.env.example` to `iot/.env` and set `OHSTEM_TOPIC_PREFIX`, credentials, and `SERIAL_PORT` if auto-detect fails.
+
+```bash
+python IoT_Gateway.py
+```
+
+### Typical local order
+
+1. Start **MongoDB**.  
+2. Start **API** (`api`).  
+3. Start **bridge** (`gateway` → `npm run bridge`).  
+4. Start **UI** (`ui` → `npm run dev`).  
+5. Optionally start **`iot/IoT_Gateway.py`** if you use the USB serial path.
 
 
 ## UI/UX
