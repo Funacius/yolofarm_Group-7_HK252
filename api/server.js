@@ -1,8 +1,25 @@
 const express = require("express");
+const { once } = require("events");
 const { init: loaders } = require("./app/loaders/index.js");
 const dotenv = require("dotenv");
 
 dotenv.config();
+
+let httpServerRef = null;
+
+function gracefulShutdown(signal) {
+  return () => {
+    console.log(`[server] Nhận ${signal} — giải phóng port...`);
+    if (!httpServerRef) {
+      process.exit(0);
+      return;
+    }
+    httpServerRef.close((err) => {
+      if (err) console.error("[server] close:", err.message);
+      process.exit(err ? 1 : 0);
+    });
+  };
+}
 
 class Server {
   constructor() {
@@ -12,68 +29,49 @@ class Server {
     this.app = express();
     Server.instance = this;
   }
+
   async startServer() {
     await loaders({ expressApp: this.app });
-    const port = process.env.PORT || "3001";
-    this.app.listen(port, (err) => {
-      if (err) {
-        console.log(err);
-        return;
+    const port = Number(process.env.PORT) || 3001;
+    const maxAttempts = Number(process.env.PORT_BIND_RETRIES) || 25;
+
+    let httpServer = null;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      httpServer = this.app.listen(port);
+      try {
+        await once(httpServer, "listening");
+        break;
+      } catch (err) {
+        await new Promise((resolve) => httpServer.close(() => resolve()));
+        if (err.code !== "EADDRINUSE" || attempt === maxAttempts - 1) {
+          if (err.code === "EADDRINUSE") {
+            console.error(
+              `[server] Port ${port} vẫn bận sau ${maxAttempts} lần thử.\n` +
+                `  Windows: netstat -ano | findstr :${port}  →  taskkill /F /PID <pid>\n` +
+                `  Hoặc đổi PORT trong api/.env`
+            );
+          } else {
+            console.error("[server]", err);
+          }
+          process.exit(1);
+          return;
+        }
+        const delayMs = 120 + attempt * 80;
+        console.warn(
+          `[server] Port ${port} tạm bận (nodemon?) — thử lại sau ${delayMs}ms (${attempt + 1}/${maxAttempts})...`
+        );
+        await new Promise((r) => setTimeout(r, delayMs));
       }
-      console.log(`App start to listen at http://localhost:${port}`);
-    });
+    }
+
+    httpServerRef = httpServer;
+    console.log(`App start to listen at http://localhost:${port}`);
+
+    process.on("SIGTERM", gracefulShutdown("SIGTERM"));
+    process.on("SIGINT", gracefulShutdown("SIGINT"));
   }
 }
 
 const serverInstance = new Server();
 
 serverInstance.startServer();
-
-// const express = require("express");
-// const logger = require("morgan");
-// const mongoose = require("mongoose");
-// const connectDB = require("./app/config/db.config");
-// const bodyPraser = require('body-parser')
-// const cors = require('cors')
-// const app = express();
-
-// const manageRoute = require("./app/routes/manage.route");
-// const lightRoute = require("./app/routes/light.route");
-// const analysisRoute = require("./app/routes/analysis.route");
-// //connect mongodb cloud
-// connectDB;
-
-// // middleware
-// app.use(logger("dev"));
-// app.use(bodyPraser.json())
-// app.use(cors())
-// // routes
-
-// app.use("/api/manage", manageRoute);
-// app.use("/api/light", lightRoute);
-// app.use("/api/analysis", analysisRoute);
-// //catch 404 error
-// app.use((req, res, next) => {
-//   const err = new Error("Not Found");
-//   err.status = 404;
-//   next(err);
-// });
-
-// // error handler
-// app.use(() => {
-//   const error = app.get("env") === "development" ? err : {};
-//   const status = err.status || 500;
-
-//   // response to client
-//   return res.status(status).json({
-//     error: {
-//       message: error.message,
-//     },
-//   });
-// });
-
-// // start server
-// const port = process.env.PORT || "3001";
-// app.listen(port, () => {
-//   console.log(`App start to listen at http://localhost:${port}`);
-// });

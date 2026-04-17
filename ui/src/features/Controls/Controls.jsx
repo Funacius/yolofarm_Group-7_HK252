@@ -9,7 +9,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import PageHeader from "../../components/common/PageHeader";
 import PumpSwitch from "../../components/common/PumpSwitch";
 import irrigationApi from "../../api/irrigationApi";
@@ -29,12 +29,14 @@ export default function Controls() {
   const [pumps, setPumps] = useState([]);
   const [pump1, setPump1] = useState(false);
   const [pump2, setPump2] = useState(false);
+  const pumpPollHoldUntil = useRef([0, 0]);
+  const pumpToggleInProgress = useRef([false, false]);
 
   const loadData = useCallback(async () => {
     setError(null);
     try {
       const [pumpList, cfg, snap] = await Promise.all([
-        irrigationApi.getPumps().catch(() => []),
+        irrigationApi.getPumpsByArea(areaId).catch(() => []),
         irrigationApi.getThresholds(areaId),
         manualControlApi.getManualState(areaId).catch(() => null),
       ]);
@@ -49,12 +51,15 @@ export default function Controls() {
       );
       setMode(anyAuto ? "auto" : "manual");
 
+      const now = Date.now();
       if (snap) {
-        setPump1(snap.pump1);
-        setPump2(snap.pump2);
+        if (now >= pumpPollHoldUntil.current[0]) setPump1(snap.pump1);
+        if (now >= pumpPollHoldUntil.current[1]) setPump2(snap.pump2);
       } else if (pumpList[0] || pumpList[1]) {
-        setPump1(Boolean(pumpList[0]?.status));
-        setPump2(Boolean(pumpList[1]?.status));
+        if (now >= pumpPollHoldUntil.current[0])
+          setPump1(Boolean(pumpList[0]?.status));
+        if (now >= pumpPollHoldUntil.current[1])
+          setPump2(Boolean(pumpList[1]?.status));
       }
     } catch (e) {
       setError(e?.message || "Không tải được cấu hình");
@@ -100,20 +105,27 @@ export default function Controls() {
     }
   };
 
-  const handlePumpToggle = async (index) => {
+  const handlePumpToggle = async (index, wantOn) => {
     setError(null);
+    if (pumpToggleInProgress.current[index]) return;
     const pump = pumps[index];
     if (!pump?.id) {
       setError("Chưa có máy bơm trong CSDL.");
       return;
     }
+    pumpToggleInProgress.current[index] = true;
+    pumpPollHoldUntil.current[index] = Date.now() + 5000;
     try {
-      await manualControlApi.togglePump(pump.id);
+      await manualControlApi.setPumpState(pump.id, wantOn);
       const snap = await manualControlApi.getManualState(areaId);
       setPump1(snap.pump1);
       setPump2(snap.pump2);
+      pumpPollHoldUntil.current[index] = 0;
     } catch (e) {
       setError(e?.message || "Không đổi được trạng thái bơm");
+      pumpPollHoldUntil.current[index] = 0;
+    } finally {
+      pumpToggleInProgress.current[index] = false;
     }
   };
 
@@ -207,7 +219,7 @@ export default function Controls() {
             title="Máy bơm 1"
             checked={pump1}
             subtitle={pump1 ? "Đang bật" : "Đang tắt"}
-            onChange={() => handlePumpToggle(0)}
+            onChange={(_e, checked) => handlePumpToggle(0, checked)}
           />
         </Grid>
 
@@ -216,7 +228,7 @@ export default function Controls() {
             title="Máy bơm 2"
             checked={pump2}
             subtitle={pump2 ? "Đang bật" : "Đang tắt"}
-            onChange={() => handlePumpToggle(1)}
+            onChange={(_e, checked) => handlePumpToggle(1, checked)}
           />
         </Grid>
       </Grid>

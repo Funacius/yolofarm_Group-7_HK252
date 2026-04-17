@@ -12,6 +12,9 @@ const INTERNAL_INGEST_TOKEN = process.env.INTERNAL_INGEST_TOKEN || "";
 const BRIDGE_PUBLISH_TOKEN = process.env.BRIDGE_PUBLISH_TOKEN || "";
 const DEFAULT_AREA_ID = parseInt(process.env.DEFAULT_AREA_ID || "1", 10);
 const PORT = parseInt(process.env.BRIDGE_PORT || "3000", 10);
+/** Giữ bản tin cuối trên broker — bảng điều khiển OhStem web/App đọc đúng trạng thái */
+const PUBLISH_RETAIN =
+  String(process.env.OHSTEM_PUBLISH_RETAIN ?? "1").trim() !== "0";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +41,9 @@ client.on("connect", () => {
   });
 });
 
+let _apiDown = false;
+let _apiDownLoggedAt = 0;
+
 client.on("message", async (topic, payloadBuf) => {
   if (!INTERNAL_INGEST_TOKEN) return;
   const suffix = topic.split("/").filter(Boolean).pop();
@@ -59,8 +65,30 @@ client.on("message", async (topic, payloadBuf) => {
         timeout: 10000,
       }
     );
+    if (_apiDown) {
+      console.log("[ingest] API reconnected — ingest resumed");
+      _apiDown = false;
+    }
   } catch (e) {
-    console.error("[ingest]", e.message);
+    const status = e.response?.status;
+    const data = e.response?.data;
+    const isConn = /ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND/.test(e.message);
+    if (isConn) {
+      const now = Date.now();
+      if (!_apiDown || now - _apiDownLoggedAt > 30000) {
+        console.warn(
+          `[ingest] API unreachable (${API_BASE_URL}) — chạy API và khớp API_BASE_URL trong gateway/.env`
+        );
+        _apiDownLoggedAt = now;
+      }
+      _apiDown = true;
+      return;
+    }
+    if (status === 400 && data?.error) {
+      console.warn("[ingest] 400:", data.error);
+    } else {
+      console.error("[ingest]", e.message);
+    }
   }
 });
 
@@ -79,7 +107,7 @@ app.post("/bridge/publish", (req, res) => {
   if (!client.connected) {
     return res.status(503).json({ error: "MQTT not connected" });
   }
-  client.publish(topic, String(payload ?? ""), {}, (err) => {
+  client.publish(topic, String(payload ?? ""), { retain: PUBLISH_RETAIN }, (err) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ ok: true });
   });

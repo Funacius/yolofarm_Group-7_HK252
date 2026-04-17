@@ -1,5 +1,5 @@
-import { Alert, Box, CircularProgress, Grid } from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
+import { Alert, Box, CircularProgress, Grid, Typography } from "@mui/material";
+import { useCallback, useEffect, useRef, useState } from "react";
 import PageHeader from "../../components/common/PageHeader";
 import SensorCard from "../../components/common/SensorCard";
 import StatusCard from "../../components/common/StatusCard";
@@ -33,6 +33,9 @@ export default function Dashboard() {
   const [pumpOn, setPumpOn] = useState([false, false]);
   const [toggleError, setToggleError] = useState(null);
 
+  const pumpPollHoldUntil = useRef([0, 0]);
+  const pumpToggleInProgress = useRef([false, false]);
+
   const loadData = useCallback(async () => {
     setError(null);
     try {
@@ -42,7 +45,7 @@ export default function Dashboard() {
           area_id: areaId,
           limit: 120,
         }),
-        irrigationApi.getPumps().catch(() => []),
+        irrigationApi.getPumpsByArea(areaId).catch(() => []),
         irrigationApi.getThresholds(areaId).catch(() => ({})),
       ]);
 
@@ -63,12 +66,27 @@ export default function Dashboard() {
 
       const snap = await manualControlApi.getManualState(areaId).catch(() => null);
       if (snap) {
-        setPumpOn([snap.pump1, snap.pump2]);
+        const now = Date.now();
+        const hold0 = now < pumpPollHoldUntil.current[0];
+        const hold1 = now < pumpPollHoldUntil.current[1];
+        setPumpOn((prev) => {
+          const p1 = hold0 ? prev[0] : snap.pump1;
+          const p2 = hold1 ? prev[1] : snap.pump2;
+          return [p1, p2];
+        });
       } else if (pumpList[0] || pumpList[1]) {
-        setPumpOn([
-          Boolean(pumpList[0]?.status),
-          Boolean(pumpList[1]?.status),
-        ]);
+        const now = Date.now();
+        setPumpOn((prev) => {
+          const p1 =
+            now < pumpPollHoldUntil.current[0]
+              ? prev[0]
+              : Boolean(pumpList[0]?.status);
+          const p2 =
+            now < pumpPollHoldUntil.current[1]
+              ? prev[1]
+              : Boolean(pumpList[1]?.status);
+          return [p1, p2];
+        });
       }
     } catch (e) {
       setError(e?.message || "Không tải được dữ liệu");
@@ -95,24 +113,26 @@ export default function Dashboard() {
           description: "Độ ẩm đất trong ngưỡng an toàn.",
         };
 
-  const handlePumpToggle = async (index) => {
+  const handlePumpToggle = async (index, wantOn) => {
     setToggleError(null);
+    if (pumpToggleInProgress.current[index]) return;
     const pump = pumps[index];
     if (!pump?.id) {
       setToggleError("Chưa có máy bơm trong CSDL — không gửi lệnh.");
       return;
     }
+    pumpToggleInProgress.current[index] = true;
+    pumpPollHoldUntil.current[index] = Date.now() + 5000;
     try {
-      await manualControlApi.togglePump(pump.id);
-      setPumpOn((prev) => {
-        const next = [...prev];
-        next[index] = !next[index];
-        return next;
-      });
+      await manualControlApi.setPumpState(pump.id, wantOn);
       const snap = await manualControlApi.getManualState(areaId);
       setPumpOn([snap.pump1, snap.pump2]);
+      pumpPollHoldUntil.current[index] = 0;
     } catch (e) {
       setToggleError(e?.message || "Không đổi được trạng thái bơm");
+      pumpPollHoldUntil.current[index] = 0;
+    } finally {
+      pumpToggleInProgress.current[index] = false;
     }
   };
 
@@ -210,14 +230,14 @@ export default function Dashboard() {
               title="Máy bơm 1"
               checked={pumpOn[0]}
               subtitle={pumpOn[0] ? "Đang bật" : "Đang tắt"}
-              onChange={() => handlePumpToggle(0)}
+              onChange={(_e, checked) => handlePumpToggle(0, checked)}
             />
 
             <PumpSwitch
               title="Máy bơm 2"
               checked={pumpOn[1]}
               subtitle={pumpOn[1] ? "Đang bật" : "Đang tắt"}
-              onChange={() => handlePumpToggle(1)}
+              onChange={(_e, checked) => handlePumpToggle(1, checked)}
             />
           </Box>
         </Grid>

@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node main.js"
+    "start": "node main.js",
+    "bridge": "node bridgeServer.js",
+    "check:ohstem": "node scripts/check-ohstem.js"
   },
   "dependencies": {
     "axios": "^1.7.7",

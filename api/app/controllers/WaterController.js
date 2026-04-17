@@ -215,82 +215,35 @@ class WaterController {
   }
 
   async getPumpById(req, res) {
-    try {
-      const pump = await this._waterService.getOnePump(req, res);
-      // .then((res) => console.log(res));
-      return res.status(200).json(pump);
-    } catch (error) {
-      console.log(error);
-    }
+    return this._waterService.getOnePump(req, res);
   }
 
   async changeStatePump(req, res) {
-    try {
-      return await this._waterService.update(req, res);
-      // .then((result) => console.log(result));
-    } catch (error) {
-      console.log(error);
-    }
+    return this._waterService.update(req, res);
   }
 
   async getPumpByAreaId(req, res) {
-    try {
-      this._waterService.getPumpByAreaId(req, res).then((result) => {
-        const pumps = result;
-        // console.log(pumps);
-        return res.status(200).json(pumps);
-      });
-    } catch (error) {
-      console.log(error);
-    }
+    return this._waterService.getPumpByAreaId(req, res);
   }
-  
+
   async changeAuto(req, res) {
-    try {
-      this._waterService.changeAuto(req, res);
-      // .then((res) => console.log(res));
-      return res.status(200).json("The Auto Change");
-    } catch (error) {
-      console.log(error);
-    }
+    return this._waterService.changeAuto(req, res);
   }
 
   async changePumpOn(req, res) {
-    try {
-      this._waterService.updateMany(req, res);
-      return res.status(200).json("Updated Pumps Successfull");
-    } catch (error) {
-      console.log(error);
-    }
+    return this._waterService.updateMany(req, res);
   }
 
   async updateTimer(req, res) {
-    try {
-      this._waterService.updateTimer(req, res).then((result) => {
-        // console.log(res);
-        return res.status(200).json(result);
-      });
-    } catch (error) {
-      console.log(error);
-    }
+    return this._waterService.updateTimer(req, res);
   }
 
   async getTimer(req, res) {
-    try {
-      this._waterService.getTimer(req, res).then((result) => {
-        return res.status(200).json(result);
-      });
-    } catch (error) {
-      console.log(error);
-    }
+    return this._waterService.getTimer(req, res);
   }
 
   async createTimer(req, res) {
-    try {
-      this._waterService.creatTimer(req, res).then((res) => console.log(res));
-    } catch (error) {
-      console.log(error);
-    }
+    return res.status(501).json({ error: "Not implemented" });
   }
 }
 

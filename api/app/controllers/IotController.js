@@ -42,6 +42,10 @@ async function ingest(req, res) {
       field = channelMap.suffixToField[String(req.body.feedSuffix).toUpperCase()];
     }
     if (!field) {
+      // OhStem có thể publish kênh không khai báo trong channel-map — bỏ qua (204), tránh bridge spam 400
+      if (req.body.feedSuffix != null && String(req.body.feedSuffix).trim() !== "") {
+        return res.status(204).send();
+      }
       return res.status(400).json({ error: "field or feedSuffix required" });
     }
 

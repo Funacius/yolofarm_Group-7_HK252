@@ -9,12 +9,13 @@ const areaController = container.resolve("areaController")
 router.get("/", areaController.getAll);
 router.get("/pumps", waterController.getAll);
 router.get("/pump/:id", waterController.getPumpById);
+/** Đặt trước /pumps/:id để không nhầm "setting" thành :id */
+router.get("/pumps/setting/:id", waterController.getTimer);
+router.put("/pumps/setting/:id", waterController.updateTimer);
 router.get("/pumps/:id", waterController.getPumpByAreaId);
-router.put("/pumps", waterController.changeStatePump)
-router.put("/pumps/setting", waterController.changeAuto)
-router.get("/pumps/setting/:id", waterController.getTimer)
-router.put("/pumps/setting/:id", waterController.updateTimer)
-router.put("/pumps/auto", waterController.changePumpOn)
+router.put("/pumps", waterController.changeStatePump);
+router.put("/pumps/setting", waterController.changeAuto);
+router.put("/pumps/auto", waterController.changePumpOn);
 
 
 module.exports = router
