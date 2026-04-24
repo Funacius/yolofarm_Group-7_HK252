@@ -5,6 +5,7 @@ import Dashboard from "./features/Dashboard/Dashboard";
 import Controls from "./features/Controls/Controls";
 import History from "./features/History/History";
 import About from "./features/About/About";
+import PlantHealth from "./features/PlantHealth/PlantHealth";
 import Login from "./features/Login/Login";
 import Error from "./features/Error/Error";
 
@@ -20,6 +21,7 @@ function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="controls" element={<Controls />} />
         <Route path="history" element={<History />} />
+        <Route path="plant-health" element={<PlantHealth />} />
         <Route path="about" element={<About />} />
         <Route path="error" element={<Error />} />
       </Route>
