@@ -10,6 +10,7 @@ import {
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import TuneIcon from "@mui/icons-material/Tune";
 import HistoryIcon from "@mui/icons-material/History";
+import LocalFloristIcon from "@mui/icons-material/LocalFlorist";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -35,6 +36,11 @@ export default function Menu() {
       text: "History",
       icon: <HistoryIcon sx={{ fontSize: 18 }} />,
       to: "/history",
+    },
+    {
+      text: "Plant Health",
+      icon: <LocalFloristIcon sx={{ fontSize: 18 }} />,
+      to: "/plant-health",
     },
     {
       text: "About",
