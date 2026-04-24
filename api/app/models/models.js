@@ -126,12 +126,36 @@ const IrrigationConfigSchema = new mongoose.Schema({
   minPumpSwitchIntervalSec: { type: Number, default: 120 },
 });
 
+const DISEASE_MAP = {
+  tomato: ["healthy", "bacterial_spot", "leaf_mold", "late_blight"], // Tomato specific statuses
+  apple: ["healthy", "apple_scab", "black_rot", "cedar_apple_rust"] // Apple specific statuses
+};
+
 const AiInferenceSchema = new mongoose.Schema({
   area_id: Number,
-  kind: { type: String, enum: ["plant_health", "harvest"], required: true },
-  label: String,
+  //kind: { type: String, enum: ["plant_health", "harvest"], required: true },
+  fruit_type: {
+    type: String,
+    enum: ["tomato", "apple"],
+    required: true
+  },
+  label: {
+    type: String,
+    required: true,
+    validate: {
+      validator: function(value) {
+        // 'this.fruit_type' gets the fruit being saved currently
+        const validDiseases = DISEASE_MAP[this.fruit_type];
+        
+        // If the fruit exists in our map, check if the disease is in its list
+        if (validDiseases) {
+          return validDiseases.includes(value);
+        }
+        return false;
+      },
+    }
+  },
   confidence: Number,
-  imageUrl: String,
   createdAt: { type: Date, default: Date.now },
 });
 
